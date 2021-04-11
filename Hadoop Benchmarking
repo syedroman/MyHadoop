@@ -1,0 +1,74 @@
+*********************************************
+	Benchmarking a hadoop cluster
+*********************************************
+
+
+
+-----*** Generate input using tergen ***-----
+$ yarn jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-*examples*.jar teragen 524288 input  (50 MB)
+$ hdfs dfs -ls input
+$ hdfs dfs -copyToLocal input ~
+$ nano ~/input/part-00000
+
+
+
+-----*** Sort the input using terasort ***-----
+$ yarn jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-*examples*.jar terasort input output                
+$ hdfs dfs -ls output
+$ hdfs dfs -copyToLocal output ~
+$ nano ~/output/part-00000
+
+
+
+-----*** Run a write test ***-----
+$ yarn jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-*test*.jar TestDFSIO -write -nrFiles 5 -fileSize 100 
+## Results : ----- TestDFSIO ----- : write
+            			     Date & time: Fri Jan 06 11:52:47 UTC 2017
+        			     Number of files: 5
+ 				     Total MBytes processed: 250
+      				     Throughput mb/sec: 41.583499667332
+ 				     Average IO rate mb/sec: 46.65265655517578
+  				     IO rate std deviation: 19.63335430303656
+     				     Test exec time sec: 22.624
+
+
+-----*** Run a read test ***-----
+yarn jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-*test*.jar TestDFSIO -read -nrFiles 5 -fileSize 100
+## Results :  ----- TestDFSIO ----- : read
+				      Number of files: 5
+				      Total MBytes processed: 250
+				      Throughput mb/sec: 77.64914899970141
+				      Average IO rate mb/sec: 83.42228698730469
+				      IO rate std deviation: 26.990856757036237
+				      Test exec time sec: 22.56
+
+
+-----*** Clean read/write test data ***-----
+$ yarn jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-*test*.jar TestDFSIO -clean
+
+
+
+-----*** MapReduce Benchmarking ***-----
+$ yarn jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-*test*.jar mrbench -numRuns 20
+## Results
+DataLines	Maps	Reduces	AvgTime (milliseconds)
+1		2	1	17290
+
+
+
+-----*** Namenode Benchmark ***-----
+
+yarn jar  /usr/local/hadoop/share/hadoop/mapreduce/hadoop-*test*.jar nnbench -operation create_write \
+    -maps 4 -reduces 2 -blockSize 1 -bytesToWrite 0 -numberOfFiles 100 \
+    -replicationFactorPerFile 3 -readFileAfterOpen true \
+    -baseDir /benchmarks/NNBench-`hostname -s`
+
+
+
+-----*** Delete output folders ***----
+$ hdfs dfs -rm -R -skipTrash input
+
+
+
+
+
